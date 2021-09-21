@@ -1,6 +1,6 @@
-import {Changes, Connection, RSelection} from 'rethinkdb-ts';
-import AbortController, {AbortSignal} from 'node-abort-controller';
 import {abortable, delay, race} from 'abort-controller-x';
+import AbortController, {AbortSignal} from 'node-abort-controller';
+import {Changes, Connection, RStream} from 'rethinkdb-ts';
 
 export type WatchOptions<T> = {
   /**
@@ -63,7 +63,7 @@ export type WatchRemoveUpdate<T> = {
  * be used with `pluck` or `map` as long as `options.key` function is provided.
  */
 export async function* watch<T>(
-  selection: RSelection<T>,
+  query: RStream<T>,
   connection?: Connection,
   options: WatchOptions<T> = {},
 ): AsyncGenerator<ReadonlyMap<string, WatchUpdate<T>>, void, void> {
@@ -80,7 +80,7 @@ export async function* watch<T>(
   } else {
     const primaryKey = await abortable(
       signal,
-      inferPrimaryKey(selection, connection),
+      inferPrimaryKey(query, connection),
     );
 
     key = value => JSON.stringify(value[primaryKey]);
@@ -90,7 +90,7 @@ export async function* watch<T>(
     return key((update.newVal ?? update.oldVal)!);
   }
 
-  const cursor = await selection
+  const cursor = await query
     .changes({
       squash: true,
       changefeedQueueSize,
@@ -166,10 +166,10 @@ export async function* watch<T>(
 }
 
 async function inferPrimaryKey<T>(
-  selection: RSelection<T>,
+  query: RStream<T>,
   connection: Connection | undefined,
 ): Promise<keyof T> {
-  const info = (await selection.info().run(connection)) as any;
+  const info = (await query.info().run(connection)) as any;
 
   const primaryKey = info?.primary_key ?? info?.table?.primary_key;
 
