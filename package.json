@@ -1,6 +1,6 @@
 {
   "name": "rethinkdb-watch",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Consume RethinkDB Changefeeds as Async Iterables",
   "keywords": [
     "rethinkdb",
@@ -28,7 +28,7 @@
   },
   "author": "Daniel Lytkin <aikoven@deeplay.io>",
   "license": "MIT",
-  "devDependencies": {    
+  "devDependencies": {
     "@tsconfig/node14": "^1.0.3",
     "@types/jest": "^26.0.24",
     "@types/lodash": "^4.14.171",
