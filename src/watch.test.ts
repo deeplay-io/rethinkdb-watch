@@ -1,6 +1,5 @@
 import {delay} from 'abort-controller-x';
 import {chunk, range, sortBy} from 'lodash';
-import AbortController from 'node-abort-controller';
 import {Connection, r} from 'rethinkdb-ts';
 import {GenericContainer, StartedTestContainer} from 'testcontainers';
 import {watch} from './watch';

@@ -1,5 +1,4 @@
 import {abortable, delay, race} from 'abort-controller-x';
-import AbortController, {AbortSignal} from 'node-abort-controller';
 import {Changes, Connection, RStream} from 'rethinkdb-ts';
 
 export type WatchOptions<T> = {

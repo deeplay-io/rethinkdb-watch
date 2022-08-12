@@ -1,5 +1,4 @@
 import {abortable} from 'abort-controller-x';
-import AbortController, {AbortSignal} from 'node-abort-controller';
 import {Connection, RFeed} from 'rethinkdb-ts';
 
 /**
