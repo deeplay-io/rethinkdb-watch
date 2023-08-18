@@ -1,4 +1,5 @@
 import {abortable, delay, race} from 'abort-controller-x';
+import {assertNever} from 'assert-never';
 import {Changes, Connection, RStream} from 'rethinkdb-ts';
 
 export type WatchOptions<T> = {
@@ -86,12 +87,52 @@ export async function* watch<T>(
   }
 
   function getKey(update: WatchUpdate<T>): string {
-    return key((update.newVal ?? update.oldVal)!);
+    const value = key((update.newVal ?? update.oldVal)!);
+
+    if (typeof value !== 'string') {
+      throw new Error(
+        `key function must return a string value, got ${JSON.stringify(value)}`,
+      );
+    }
+
+    return value;
+  }
+
+  // see the docstring to `handleDuplicateUpdates`
+  const states = new Map<
+    string,
+    {refCount: number; pendingUpdates: WatchChangeUpdate<T>[]}
+  >();
+
+  function handleChanges(
+    batch: Map<string, WatchUpdate<T>>,
+    changes: Changes<T>,
+  ): void {
+    let update = makeUpdate(changes);
+
+    if (update == null) {
+      return;
+    }
+
+    const key = getKey(update);
+
+    update = handleDuplicateUpdates(states, key, update);
+
+    if (update == null) {
+      return;
+    }
+
+    addToBatch(batch, key, update);
   }
 
   const cursor = await query
     .changes({
-      squash: true,
+      /**
+       * `squash: true` introduces inconsistencies if the document is matched by
+       * the query multiple times, where it can filter out changes that we need
+       * to correctly handle duplicates in `handleDuplicateUpdates`.
+       */
+      squash: false,
       changefeedQueueSize,
       includeInitial: true,
       includeStates: true,
@@ -99,22 +140,18 @@ export async function* watch<T>(
     .run(connection);
 
   try {
-    const initial = new Map<string, WatchUpdate<T>>();
+    const initialBatch = new Map<string, WatchAddUpdate<T>>();
 
     while (true) {
       const changes = await abortable(signal, cursor.next());
-      const update = makeUpdate(changes);
-
-      if (update != null) {
-        addToBatch(initial, getKey(update), update);
-      }
+      handleChanges(initialBatch, changes);
 
       if (changes.state === 'ready') {
         break;
       }
     }
 
-    yield initial;
+    yield initialBatch;
 
     let pendingPromise: Promise<Changes<T>> | undefined;
 
@@ -128,16 +165,10 @@ export async function* watch<T>(
         nextPromise = cursor.next();
       }
 
-      const changes = await abortable(signal, nextPromise);
-      const update = makeUpdate(changes);
-
-      if (update == null) {
-        continue;
-      }
-
       const batch = new Map<string, WatchUpdate<T>>();
 
-      addToBatch(batch, getKey(update), update);
+      const changes = await abortable(signal, nextPromise);
+      handleChanges(batch, changes);
 
       await race(signal, signal => [
         delay(signal, bufferTimeMs),
@@ -146,18 +177,14 @@ export async function* watch<T>(
             pendingPromise = cursor.next();
 
             const changes = await abortable(signal, pendingPromise);
-            const update = makeUpdate(changes);
-
-            if (update == null) {
-              continue;
-            }
-
-            addToBatch(batch, getKey(update), update);
+            handleChanges(batch, changes);
           }
         }),
       ]);
 
-      yield batch;
+      if (batch.size > 0) {
+        yield batch;
+      }
     }
   } finally {
     await cursor.close();
@@ -209,6 +236,91 @@ function makeUpdate<T>(changes: Changes<T>): WatchUpdate<T> | null {
       };
     }
   }
+}
+
+/**
+ * Deduplicate updates for the same value.
+ * 
+ * Duplicates can happen when the same value is matched by the query multiple
+ * times. For example, if such document is matched by two multi-index entries,
+ * and the one match is removed, we will receive a `remove` change; after the
+ * second match is removed, we will receive another `remove` change.
+ * 
+ * This works by keeping track of the number of references to the value, and:
+ * 
+ *  - Only emitting the first `add` update.
+ *  - Delaying the emission of the `change` updates until the reference count
+ *    equals the number of delayed `change` updates. This ensures that we only
+ *    emit the last `change` update. This may happen as a result of `change` or
+ *    `remove` updates.
+ *  - Only emitting the last `remove` update.
+ */
+function handleDuplicateUpdates<T>(
+  states: Map<
+    string,
+    {refCount: number; pendingUpdates: WatchChangeUpdate<T>[]}
+  >,
+  key: string,
+  update: WatchUpdate<T>,
+): WatchUpdate<T> | null {
+  let state = states.get(key);
+
+  let skip: boolean;
+
+  if (update.type === 'add') {
+    if (state != null) {
+      state.refCount++;
+      
+      skip = true;
+    } else {
+      state = {
+        refCount: 1,
+        pendingUpdates: [],
+      };
+      states.set(key, state);
+
+      skip = false;
+    }
+  } else if (update.type === 'change') {
+    if (state == null) {
+      throw new Error(`Unexpected 'change' update for non-existent value`);
+    } else {
+      state.pendingUpdates.push(update);
+
+      // only count last 'change'
+      if (state.pendingUpdates.length === state.refCount) {
+        state.pendingUpdates.length = 0;
+
+        skip = false;
+      } else {
+        skip = true;
+      }
+    }
+  } else if (update.type === 'remove') {
+    if (state == null) {
+      throw new Error(`Unexpected 'remove' update for non-existent value`);
+    } else {
+      state.refCount--;
+
+      if (state.pendingUpdates.length === state.refCount) {
+        if (state.refCount === 0) {
+          states.delete(key);
+        } else {
+          update = state.pendingUpdates[state.pendingUpdates.length - 1]!;
+
+          state.pendingUpdates.length = 0;
+        }
+
+        skip = false;
+      } else {
+        skip = true;
+      }
+    }
+  } else {
+    skip = assertNever(update);
+  }
+
+  return skip ? null : update;
 }
 
 function addToBatch<T>(
