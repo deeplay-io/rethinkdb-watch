@@ -1,6 +1,6 @@
 {
   "name": "rethinkdb-watch",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Consume RethinkDB Changefeeds as Async Iterables",
   "keywords": [
     "rethinkdb",
