@@ -43,6 +43,7 @@
   },
   "dependencies": {
     "abort-controller-x": "^0.4.0",
+    "assert-never": "^1.2.1",
     "rethinkdb-ts": "^2.4.14"
   }
 }

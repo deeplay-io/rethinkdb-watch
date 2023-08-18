@@ -37,7 +37,7 @@ Watch for real-time updates of query results.
 Emits updates in batches represented as `Map`, where key is JSON-stringified
 primary key, and value is the update event.
 
-The first emission is the initial query result.
+The first emission represents the full initial query result.
 
 Subsequent updates are buffered in time window specified by
 `options.bufferTimeMs`.

@@ -1,6 +1,6 @@
 import {delay} from 'abort-controller-x';
 import {chunk, range, sortBy} from 'lodash';
-import {Connection, r} from 'rethinkdb-ts';
+import {Connection, RDatum, r} from 'rethinkdb-ts';
 import {GenericContainer, StartedTestContainer} from 'testcontainers';
 import {watch} from './watch';
 
@@ -9,7 +9,7 @@ let connection: Connection;
 
 const db = r.db('test');
 const tableName = 'changes';
-const table = db.table<{id: number; test?: string}>(tableName);
+const table = db.table<{id: number; test?: any}>(tableName);
 
 beforeAll(async () => {
   rethinkdbContainer = await new GenericContainer('rethinkdb:2.4.0')
@@ -417,65 +417,65 @@ test('between', async () => {
   ]();
 
   await expect(iterator.next()).resolves.toMatchInlineSnapshot(`
-Object {
-  "done": false,
-  "value": Map {
-    "3" => Object {
-      "newVal": Object {
-        "id": 3,
-      },
-      "type": "add",
-    },
-    "2" => Object {
-      "newVal": Object {
-        "id": 2,
-      },
-      "type": "add",
-    },
-  },
-}
-`);
+          Object {
+            "done": false,
+            "value": Map {
+              "3" => Object {
+                "newVal": Object {
+                  "id": 3,
+                },
+                "type": "add",
+              },
+              "2" => Object {
+                "newVal": Object {
+                  "id": 2,
+                },
+                "type": "add",
+              },
+            },
+          }
+        `);
 
   await table.get(2).update({test: '0'}).run(connection);
 
   await expect(iterator.next()).resolves.toMatchInlineSnapshot(`
-Object {
-  "done": false,
-  "value": Map {
-    "2" => Object {
-      "newVal": Object {
-        "id": 2,
-        "test": "0",
-      },
-      "oldVal": Object {
-        "id": 2,
-      },
-      "type": "change",
-    },
-  },
-}
-`);
+          Object {
+            "done": false,
+            "value": Map {
+              "2" => Object {
+                "newVal": Object {
+                  "id": 2,
+                  "test": "0",
+                },
+                "oldVal": Object {
+                  "id": 2,
+                },
+                "type": "change",
+              },
+            },
+          }
+        `);
 
   await table.get(3).update({test: '1'}).run(connection);
   await table.get(1).update({test: '1'}).run(connection);
 
   await expect(iterator.next()).resolves.toMatchInlineSnapshot(`
-Object {
-  "done": false,
-  "value": Map {
-    "3" => Object {
-      "newVal": Object {
-        "id": 3,
-        "test": "1",
-      },
-      "oldVal": Object {
-        "id": 3,
-      },
-      "type": "change",
-    },
-  },
-}
-`);
+          Object {
+            "done": false,
+            "value": Map {
+              "3" => Object {
+                "newVal": Object {
+                  "id": 3,
+                  "test": "1",
+                },
+                "oldVal": Object {
+                  "id": 3,
+                },
+                "type": "change",
+              },
+            },
+          }
+        `);
 
   await iterator.return();
 });
@@ -488,61 +488,377 @@ test('getAll', async () => {
   ]();
 
   await expect(iterator.next()).resolves.toMatchInlineSnapshot(`
-Object {
-  "done": false,
-  "value": Map {
-    "3" => Object {
-      "newVal": Object {
-        "id": 3,
-      },
-      "type": "add",
-    },
-    "2" => Object {
-      "newVal": Object {
-        "id": 2,
-      },
-      "type": "add",
-    },
-  },
-}
-`);
+          Object {
+            "done": false,
+            "value": Map {
+              "3" => Object {
+                "newVal": Object {
+                  "id": 3,
+                },
+                "type": "add",
+              },
+              "2" => Object {
+                "newVal": Object {
+                  "id": 2,
+                },
+                "type": "add",
+              },
+            },
+          }
+        `);
 
   await table.get(2).update({test: '0'}).run(connection);
 
   await expect(iterator.next()).resolves.toMatchInlineSnapshot(`
-Object {
-  "done": false,
-  "value": Map {
-    "2" => Object {
-      "newVal": Object {
-        "id": 2,
-        "test": "0",
-      },
-      "oldVal": Object {
-        "id": 2,
-      },
-      "type": "change",
-    },
-  },
-}
-`);
+          Object {
+            "done": false,
+            "value": Map {
+              "2" => Object {
+                "newVal": Object {
+                  "id": 2,
+                  "test": "0",
+                },
+                "oldVal": Object {
+                  "id": 2,
+                },
+                "type": "change",
+              },
+            },
+          }
+        `);
 
   await table.get(3).update({test: '1'}).run(connection);
   await table.get(1).update({test: '1'}).run(connection);
 
   await expect(iterator.next()).resolves.toMatchInlineSnapshot(`
+          Object {
+            "done": false,
+            "value": Map {
+              "3" => Object {
+                "newVal": Object {
+                  "id": 3,
+                  "test": "1",
+                },
+                "oldVal": Object {
+                  "id": 3,
+                },
+                "type": "change",
+              },
+            },
+          }
+        `);
+
+  await iterator.return();
+});
+
+test('multiple matches of one document', async () => {
+  await table.insert([{id: 1}, {id: 2}, {id: 3}]).run(connection);
+
+  const iterator = watch(table.getAll(2, 2, 3), connection)[
+    Symbol.asyncIterator
+  ]();
+
+  await expect(iterator.next()).resolves.toMatchInlineSnapshot(`
+          Object {
+            "done": false,
+            "value": Map {
+              "3" => Object {
+                "newVal": Object {
+                  "id": 3,
+                },
+                "type": "add",
+              },
+              "2" => Object {
+                "newVal": Object {
+                  "id": 2,
+                },
+                "type": "add",
+              },
+            },
+          }
+        `);
+
+  await table.get(2).update({test: '0'}).run(connection);
+
+  await expect(iterator.next()).resolves.toMatchInlineSnapshot(`
+          Object {
+            "done": false,
+            "value": Map {
+              "2" => Object {
+                "newVal": Object {
+                  "id": 2,
+                  "test": "0",
+                },
+                "oldVal": Object {
+                  "id": 2,
+                },
+                "type": "change",
+              },
+            },
+          }
+        `);
+
+  await table.get(3).update({test: '1'}).run(connection);
+  await table.get(1).update({test: '1'}).run(connection);
+
+  await expect(iterator.next()).resolves.toMatchInlineSnapshot(`
+          Object {
+            "done": false,
+            "value": Map {
+              "3" => Object {
+                "newVal": Object {
+                  "id": 3,
+                  "test": "1",
+                },
+                "oldVal": Object {
+                  "id": 3,
+                },
+                "type": "change",
+              },
+            },
+          }
+        `);
+
+  await iterator.return();
+});
+
+test('multiple multi-index matches', async () => {
+  await table
+    .indexCreate('test-index', (row: RDatum) => row('test'), {multi: true})
+    .run(connection);
+
+  await table.indexWait('test-index').run(connection);
+
+  await table
+    .insert([{id: 1}, {id: 2, test: ['a', 'b']}, {id: 3, test: ['b']}])
+    .run(connection);
+
+  const iterator = watch(
+    table.getAll('a', 'b', {index: 'test-index'}).filter(row => r.expr(true)),
+    connection,
+  )[Symbol.asyncIterator]();
+
+  await expect(iterator.next()).resolves.toMatchInlineSnapshot(`
+          Object {
+            "done": false,
+            "value": Map {
+              "3" => Object {
+                "newVal": Object {
+                  "id": 3,
+                  "test": Array [
+                    "b",
+                  ],
+                },
+                "type": "add",
+              },
+              "2" => Object {
+                "newVal": Object {
+                  "id": 2,
+                  "test": Array [
+                    "a",
+                    "b",
+                  ],
+                },
+                "type": "add",
+              },
+            },
+          }
+        `);
+
+  await table
+    .get(2)
+    .update({test: ['a', 'b', 'c']})
+    .run(connection);
+
+  await expect(iterator.next()).resolves.toMatchInlineSnapshot(`
+          Object {
+            "done": false,
+            "value": Map {
+              "2" => Object {
+                "newVal": Object {
+                  "id": 2,
+                  "test": Array [
+                    "a",
+                    "b",
+                    "c",
+                  ],
+                },
+                "oldVal": Object {
+                  "id": 2,
+                  "test": Array [
+                    "a",
+                    "b",
+                  ],
+                },
+                "type": "change",
+              },
+            },
+          }
+        `);
+
+  await table
+    .get(3)
+    .update({test: ['b', 'c']})
+    .run(connection);
+  await table
+    .get(1)
+    .update({test: ['c']})
+    .run(connection);
+
+  await expect(iterator.next()).resolves.toMatchInlineSnapshot(`
+          Object {
+            "done": false,
+            "value": Map {
+              "3" => Object {
+                "newVal": Object {
+                  "id": 3,
+                  "test": Array [
+                    "b",
+                    "c",
+                  ],
+                },
+                "oldVal": Object {
+                  "id": 3,
+                  "test": Array [
+                    "b",
+                  ],
+                },
+                "type": "change",
+              },
+            },
+          }
+        `);
+
+  await table
+    .get(2)
+    .update({test: ['a']})
+    .run(connection);
+
+  await expect(iterator.next()).resolves.toMatchInlineSnapshot(`
 Object {
   "done": false,
   "value": Map {
-    "3" => Object {
+    "2" => Object {
       "newVal": Object {
-        "id": 3,
-        "test": "1",
+        "id": 2,
+        "test": Array [
+          "a",
+        ],
       },
       "oldVal": Object {
-        "id": 3,
+        "id": 2,
+        "test": Array [
+          "a",
+          "b",
+          "c",
+        ],
       },
       "type": "change",
+    },
+  },
+}
+`);
+
+  await table
+    .get(2)
+    .update({test: ['b']})
+    .run(connection);
+
+  await expect(iterator.next()).resolves.toMatchInlineSnapshot(`
+Object {
+  "done": false,
+  "value": Map {
+    "2" => Object {
+      "newVal": Object {
+        "id": 2,
+        "test": Array [
+          "b",
+        ],
+      },
+      "oldVal": Object {
+        "id": 2,
+        "test": Array [
+          "a",
+        ],
+      },
+      "type": "change",
+    },
+  },
+}
+`);
+
+  await table
+    .get(2)
+    .update({test: ['b', 'a']})
+    .run(connection);
+
+  await expect(iterator.next()).resolves.toMatchInlineSnapshot(`
+Object {
+  "done": false,
+  "value": Map {
+    "2" => Object {
+      "newVal": Object {
+        "id": 2,
+        "test": Array [
+          "b",
+          "a",
+        ],
+      },
+      "oldVal": Object {
+        "id": 2,
+        "test": Array [
+          "b",
+        ],
+      },
+      "type": "change",
+    },
+  },
+}
+`);
+
+  await table
+    .get(2)
+    .update({test: ['a']})
+    .run(connection);
+  await table.get(2).update({test: []}).run(connection);
+
+  await expect(iterator.next()).resolves.toMatchInlineSnapshot(`
+Object {
+  "done": false,
+  "value": Map {
+    "2" => Object {
+      "oldVal": Object {
+        "id": 2,
+        "test": Array [
+          "b",
+          "a",
+        ],
+      },
+      "type": "remove",
+    },
+  },
+}
+`);
+
+  await table.get(1).update({test: []}).run(connection);
+  await table
+    .get(2)
+    .update({test: ['a', 'b']})
+    .run(connection);
+
+  await expect(iterator.next()).resolves.toMatchInlineSnapshot(`
+Object {
+  "done": false,
+  "value": Map {
+    "2" => Object {
+      "newVal": Object {
+        "id": 2,
+        "test": Array [
+          "a",
+          "b",
+        ],
+      },
+      "type": "add",
     },
   },
 }
