@@ -12,7 +12,7 @@ const tableName = 'changes';
 const table = db.table<{id: number; test?: any}>(tableName);
 
 beforeAll(async () => {
-  rethinkdbContainer = await new GenericContainer('rethinkdb:2.4.0')
+  rethinkdbContainer = await new GenericContainer('rethinkdb:2.4.3')
     .withExposedPorts(28015)
     .start();
 

@@ -680,10 +680,10 @@ abab@^2.0.3, abab@^2.0.5:
   resolved "https://registry.yarnpkg.com/abab/-/abab-2.0.5.tgz#c0b678fb32d60fc1219c784d6a826fe385aeb79a"
   integrity sha512-9IK9EadsbHo6jLWIpxpR6pL0sazTXV6+SQv25ZB+F7Bj9mJNaOc4nCRabwd5M/JwmUa8idz6Eci6eKfJryPs6Q==
 
-abort-controller-x@^0.4.0:
-  version "0.4.0"
-  resolved "https://registry.yarnpkg.com/abort-controller-x/-/abort-controller-x-0.4.0.tgz#fde25da52548c7ff3d8b3b32dffc943452874d5f"
-  integrity sha512-cuNbw3c/SvEOkWkgxoWOOS3QzcTCC6YXCFH6oTZ/jvjZPBhkjaoUyCLwdAViRRhYmluJPD7vGaTLkHCp67xQVQ==
+abort-controller-x@^0.4.3:
+  version "0.4.3"
+  resolved "https://registry.yarnpkg.com/abort-controller-x/-/abort-controller-x-0.4.3.tgz#ff269788386fabd58a7b6eeaafcb6cf55c2958e0"
+  integrity sha512-VtUwTNU8fpMwvWGn4xE93ywbogTYsuT+AUxAXOeelbXuQVIwNmC5YLeho9sH4vZ4ITW8414TTAOG1nW6uIVHCA==
 
 acorn-globals@^6.0.0:
   version "6.0.0"
@@ -797,10 +797,10 @@ asn1@~0.2.0:
   dependencies:
     safer-buffer "~2.1.0"
 
-assert-never@^1.2.1:
-  version "1.2.1"
-  resolved "https://registry.yarnpkg.com/assert-never/-/assert-never-1.2.1.tgz#11f0e363bf146205fb08193b5c7b90f4d1cf44fe"
-  integrity sha512-TaTivMB6pYI1kXwrFlEhLeGfOqoDNdTxjCdwRfFFkEA30Eu+k48W34nlok2EYWJfFFzqaEmichdNM7th6M5HNw==
+assert-never@^1.4.0:
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/assert-never/-/assert-never-1.4.0.tgz#b0d4988628c87f35eb94716cc54422a63927e175"
+  integrity sha512-5oJg84os6NMQNl27T9LnZkvvqzvAnHu03ShCnoj6bsJwS7L8AO4lf+C/XjK/nvzEqQB744moC6V128RucQd1jA==
 
 async@^3.2.0:
   version "3.2.0"
@@ -2512,10 +2512,10 @@ resolve@^1.20.0:
     is-core-module "^2.2.0"
     path-parse "^1.0.6"
 
-rethinkdb-ts@^2.4.14:
-  version "2.4.14"
-  resolved "https://registry.yarnpkg.com/rethinkdb-ts/-/rethinkdb-ts-2.4.14.tgz#bbcb7b3652f25b5e1e24bdd87b5e2f623a1c66f7"
-  integrity sha512-7sLnDTqZDrfjwGvK9YoewahqVyfQG0pHpClU/dwPlvA/E8YUxc1liXDukhetGhpGYGxQamzKwWWZl9eeVRZEsA==
+"rethinkdb-ts@^2.4.14 || ^3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/rethinkdb-ts/-/rethinkdb-ts-3.0.0.tgz#2de7d41debad38f41db63c4e72cfea5d16beb9ca"
+  integrity sha512-UwZeYd7zH1UkqJFChpw8Qv1qykjitlb3ApH3kOGtB06I7D7q9NeKaGQN/txrQZUmYcy5p6McjqsVttIQOdsKjA==
 
 rimraf@^2.6.3:
   version "2.7.1"
